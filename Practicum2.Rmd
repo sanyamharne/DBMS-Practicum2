@@ -201,6 +201,7 @@ month <-xmlSApply(node, function(x)xmlValue(x[['Month']]))
 day<-xmlSApply(node, function(x)xmlValue(x[['Day']]))
 medlinedate <- xmlSApply(node, function(x)xmlValue(x[['MedlineDate']]))
 n<- length(year)
+pub_date<-c(1:n)
 for (m in 1:n) {
   if(is.na(year[m])){
     pub_date[m]<-medlinedate[m]
@@ -228,7 +229,7 @@ journal$iso_abbr<-iso_abbr
 journal
 ```
 
-
+# Extracting Author table from XML 
 ```{r}
 node <- xpathApply(root, "//Author")
 last_name <- xmlSApply(node, function(x)xmlValue(x[['LastName']]))
@@ -244,6 +245,65 @@ Author <- data.frame(author_id = author_id,
                     stringsAsFactors = F)
 Author <- unique(Author)
 Author
+```
+
+
+#extracting Eloaction table from XML
+```{r}
+xpathEx1 <- "//Article/ELocationID"
+elocation<- data.frame(xpathSApply(root,xpathEx1,xmlValue)) 
+xpathEx1 <- "//Article/ELocationID[@EIdType]"
+e_type<- xpathSApply(root,xpathEx1,xmlGetAttr, "EIdType")
+names(elocation)[1]<-"e_id"
+elocation
+e_type
+elocation$e_type<-e_type
+elocation
+
+```
+
+
+
+#extracting AbstractText table from XML
+```{r}
+#Node by Node traversal to get the correct artile id for the abstract text
+xpathEx1<-"//MedlineCitation/PMID"
+pmid<-xpathSApply(root,xpathEx1,xmlValue)
+
+xpath<-"//Abstract/AbstractText"
+abstract_text<-data.frame(xpathSApply(root,xpath,xmlValue))
+names(abstract_text)[1]<-"abs_text"
+
+m=1
+for(k in 1:19){
+  a<-pmid[k]
+  xpath<- sprintf("//MedlineCitation[PMID= %s]//Abstract/AbstractText", a)
+  txt<-xpathSApply(root,xpath,xmlValue)
+  
+  xpath<- sprintf("//MedlineCitation[PMID= %s]//Abstract/AbstractText[@Label]", a)
+  label<-xpathSApply(root,xpath,xmlGetAttr,"Label")
+  
+  xpath<- sprintf("//MedlineCitation[PMID= %s]//Abstract/AbstractText[@NlmCategory]", a)
+  nlmcategory<-xpathSApply(root,xpath,xmlGetAttr,"NlmCategory")
+  if(length(txt)==1){
+      abstract_text$label[m]=NA
+      abstract_text$nlmcategory[m]=NA
+      m=m+1
+  }
+  else{
+    c=1 
+    while(c<=length(txt)){
+      abstract_text$pmid[m]<-pmid[k]
+      abstract_text$label[m]<-label[c]
+      abstract_text$nlmcategory[m]<- nlmcategory[c]
+      #abstract_text$abs_text[m]<- txt[c]
+      m=m+1
+      c=c+1
+    }
+    
+  }
+}
+abstract_text
 ```
 
 
