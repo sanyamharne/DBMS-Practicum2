@@ -339,6 +339,14 @@ abstract_text
 ```
 
 
+# Extracting the ArticlePublicationType
+```{r}
+xpathEx1 = "//PublicationTypeList/PublicationType"
+pub_type<-xpathSApply(root,xpathEx1,xmlValue)
+pub_type
+
+```
+
 ```{sql connection=dbcon}
 
 ```
