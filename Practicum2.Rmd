@@ -10,6 +10,7 @@ output: html_document
 ## Importing required libraries
 ```{r}
 library(xml2)
+library(dplyr)
 library(RSQLite)
 library(XML)
 ```
@@ -339,12 +340,77 @@ abstract_text
 ```
 
 
-# Extracting the ArticlePublicationType
+# Extracting the ArticleAuthor
 ```{r}
-xpathEx1 = "//PublicationTypeList/PublicationType"
-pub_type<-xpathSApply(root,xpathEx1,xmlValue)
-pub_type
+xpathEx1 = "//AuthorList/Author/LastName"
+last_name <- xpathSApply(root, xpathEx1, xmlValue)
+xpathEx1 = "//AuthorList/Author/ForeName "
+fore_name <- xpathSApply(root, xpathEx1, xmlValue)
+article_authors<- data.frame(last_name = last_name,
+                             fore_name = fore_name,
+                             stringsAsFactors = F)
 
+#Node by Node traversal to get the correct artile id for the abstract text
+xpathEx1<-"//MedlineCitation/PMID"
+pmid<-xpathSApply(root,xpathEx1,xmlValue)
+article_authors$pmid <- c(1:length(article_authors$last_name))
+m = 1
+for(k in 1:length(article_authors$last_name)){
+  a<-pmid[k]
+  xpath<- sprintf("//MedlineCitation[PMID= %s]//Author/LastName", a)
+  auth<-xpathSApply(root,xpath,xmlValue)
+  c = 1
+  while(c<=length(auth)){
+    article_authors$pmid[m] <- pmid[k]
+    m=m+1
+    c=c+1
+  }
+}
+article_authors
+inner_join(Author, article_authors, by = c("last_name", "fore_name")) %>% select(pmid, author_id)
+```
+
+
+
+#Extracting ArticleElocation
+```{r}
+xpathEx1 = "//ELocationID"
+e_id <- xpathSApply(root, xpathEx1, xmlValue)
+ArticleElocation <- data.frame(e_id = e_id, stringsAsFactors = F)
+
+#Node by Node traversal to get the correct artile id for the abstract text
+xpathEx1<-"//MedlineCitation/PMID"
+pmid<-xpathSApply(root,xpathEx1,xmlValue)
+ArticleElocation$pmid <- c(1:length(ArticleElocation$e_id))
+m = 1
+for(k in 1:length(ArticleElocation$e_id)){
+  a<-pmid[k]
+  xpath<- sprintf("//MedlineCitation[PMID= %s]/Article/ELocationID", a)
+  e_id<-xpathSApply(root,xpath,xmlValue)
+  c = 1
+  if(length(e_id)==1){
+    ArticleElocation$pmid[m] <- pmid[k]
+    m=m+1
+    c=c+1
+  }
+  else{
+     while(c<=length(e_id)){
+      ArticleElocation$pmid[m] <- pmid[k]
+      m=m+1
+      c=c+1
+    }
+  }
+ 
+}
+ArticleElocation
+```
+
+
+```{r}
+  a<-pmid[1]
+  xpath<- sprintf("//MedlineCitation[PMID= %s]/Article/ELocationID", a)
+  e_id<-xpathSApply(root,xpath,xmlValue)
+  e_id
 ```
 
 ```{sql connection=dbcon}
