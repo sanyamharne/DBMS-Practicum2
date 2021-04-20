@@ -16,7 +16,7 @@ library(XML)
 
 ## Setting up Connection to Database and Parsing XML
 ```{r}
-path <- "/Users/sanyamharne/Desktop/practicum2/"
+path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
 fn <- "pubmed_sample.xml"
 fpn = paste0(path, fn)
 
@@ -229,11 +229,11 @@ journal$iso_abbr<-iso_abbr
 journal
 ```
 
-# Extracting Author table from XML 
+## Extracting the Author table from the XML
 ```{r}
 node <- xpathApply(root, "//Author")
 last_name <- xmlSApply(node, function(x)xmlValue(x[['LastName']]))
-author_id <- c(1: length(last_name))
+author_id <- c(1: length(last_name))*0
 fore_name <- xmlSApply(node, function(x)xmlValue(x[['ForeName']]))
 initials <- xmlSApply(node, function(x)xmlValue(x[['Initials']]))
 affiliation <- xmlSApply(node, function(x)xmlValue(x[['Affiliation']]))
@@ -243,10 +243,45 @@ Author <- data.frame(author_id = author_id,
                     initials = initials,
                     affiliation = affiliation,
                     stringsAsFactors = F)
-Author <- unique(Author)
 Author
+a <- Author[!is.na(Author$affiliation),]
+b <- a[!duplicated(a[, 2:3]),]
+Author <- unique(Author[,1:4])
+Author$author_id <- c(1:length(Author[,1]))
+Author$affiliation <- NA
+names(b)[names(b) == "affiliation"] <- "c"
+for(i in 1:nrow(b)){
+  a = b[i,]$fore_name
+  Author$affiliation[Author$fore_name == a & Author$last_name == b[i,]$last_name] <- b[i,]$c
+}
 ```
 
+## Extracting the Article table from the XML
+```{r}
+node <- xpathApply(root, "//MedlineCitation")
+pmid <- xmlSApply(node, function(x)xmlValue(x[['PMID']]))
+node <- xpathApply(root, "//Article")
+title <- xmlSApply(node, function(x)xmlValue(x[['ArticleTitle']]))
+node <- xpathApply(root, "//Article/Pagination")
+pagination <- xmlSApply(node, function(x)xmlValue(x[['MedlinePgn']]))
+node <- xpathApply(root, "//Article")
+language <- xmlSApply(node, function(x)xmlValue(x[['Language']]))
+article_date <- xmlSApply(node, function(x)xmlValue(x[['ArticleDate']]))
+node <- xpathApply(root, "//Article/Journal")
+journalid <- xmlSApply(node, function(x)xmlValue(x[['ISSN']]))
+xpath <- "//Article[@PubModel]"
+pub_model <- xpathSApply(root,xpath,xmlGetAttr,"PubModel")
+
+Article <- data.frame(pmid = pmid,
+                      title = title,
+                      pagination = pagination,
+                      language = language,
+                      article_date = article_date,
+                      pub_model = pub_model,
+                      journal_id = journalid,
+                      stringsAsFactors = F)
+Article
+```
 
 #extracting Eloaction table from XML
 ```{r}
@@ -261,8 +296,6 @@ elocation$e_type<-e_type
 elocation
 
 ```
-
-
 
 #extracting AbstractText table from XML
 ```{r}
