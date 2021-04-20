@@ -173,7 +173,6 @@ CREATE TABLE IF  NOT EXISTS ArticleHistory(
 );
 ```
 
-
 #extracting the Journal table from XML
 ```{r}
 xpathEx1<- "//Journal/ISSN"
@@ -216,7 +215,6 @@ for (m in 1:n) {
     }
   }
 }
-
 journal$pub_date<-pub_date
 #Extracting title and iso_abbr
 xpathEx2 <-"//Journal"
@@ -228,11 +226,11 @@ journal$iso_abbr<-iso_abbr
 journal
 ```
 
-
+## Extracting the Author table from the XML
 ```{r}
 node <- xpathApply(root, "//Author")
 last_name <- xmlSApply(node, function(x)xmlValue(x[['LastName']]))
-author_id <- c(1: length(last_name))
+author_id <- c(1: length(last_name))*0
 fore_name <- xmlSApply(node, function(x)xmlValue(x[['ForeName']]))
 initials <- xmlSApply(node, function(x)xmlValue(x[['Initials']]))
 affiliation <- xmlSApply(node, function(x)xmlValue(x[['Affiliation']]))
@@ -242,26 +240,42 @@ Author <- data.frame(author_id = author_id,
                     initials = initials,
                     affiliation = affiliation,
                     stringsAsFactors = F)
-Author <- unique(Author)
 Author
+a <- Author[!is.na(Author$affiliation),]
+b <- a[!duplicated(a[, 2:3]),]
+Author <- unique(Author[,1:4])
+Author$author_id <- c(1:length(Author[,1]))
+Author$affiliation <- NA
+names(b)[names(b) == "affiliation"] <- "c"
+for(i in 1:nrow(b)){
+  a = b[i,]$fore_name
+  Author$affiliation[Author$fore_name == a & Author$last_name == b[i,]$last_name] <- b[i,]$c
+}
 ```
 
-
-```{sql connection=dbcon}
-
-```
-```{sql connection=dbcon}
-
-```
-```{sql connection=dbcon}
-
-```
-```{sql connection=dbcon}
-
-```
-
-## Working with the xml
+## Extracting the Article table from the XML
 ```{r}
+node <- xpathApply(root, "//MedlineCitation")
+pmid <- xmlSApply(node, function(x)xmlValue(x[['PMID']]))
+node <- xpathApply(root, "//Article")
+title <- xmlSApply(node, function(x)xmlValue(x[['ArticleTitle']]))
+node <- xpathApply(root, "//Article/Pagination")
+pagination <- xmlSApply(node, function(x)xmlValue(x[['MedlinePgn']]))
+node <- xpathApply(root, "//Article")
+language <- xmlSApply(node, function(x)xmlValue(x[['Language']]))
+article_date <- xmlSApply(node, function(x)xmlValue(x[['ArticleDate']]))
+node <- xpathApply(root, "//Article/Journal")
+journalid <- xmlSApply(node, function(x)xmlValue(x[['ISSN']]))
+#pub_model
+
+Article <- data.frame(pmid = pmid,
+                    title = title,
+                    pagination = pagination,
+                    language = language,
+                    article_date = article_date,
+                    journal_id = journalid,
+                    stringsAsFactors = F)
+Article
 ```
 
 
