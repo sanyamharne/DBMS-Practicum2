@@ -17,8 +17,8 @@ library(XML)
 
 ## Setting up Connection to Database and Parsing XML
 ```{r}
-path<- "/Users/sanyamharne/Desktop/practicum2/"
-#path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
+#path<- "/Users/sanyamharne/Desktop/practicum2/"
+path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
 fn <- "pubmed_sample.xml"
 fpn = paste0(path, fn)
 
@@ -339,6 +339,35 @@ for(k in 1:19){
 abstract_text
 ```
 
+## Extracting ArticleHistory table from the XML
+```{r}
+#Node by Node traversal to get the correct artile id for the abstract text
+xpathEx1<-"//MedlineCitation/PMID"
+pmid<-xpathSApply(root,xpathEx1,xmlValue)
+
+xpath<-"//History/PubMedPubDate[@PubStatus]"
+status <- xpathSApply(root,xpath,xmlGetAttr,"PubStatus")
+xpath<-"//History/PubMedPubDate"
+pub_date <- xpathSApply(root,xpath,xmlValue)
+ArticleHistory<-data.frame(status = status,
+                           pub_date = pub_date,
+                           stringsAsFactors = F)
+ArticleHistory$pmid <- c(1:length(ArticleHistory$status))
+m=1
+for(k in 1:length(pmid)){
+  a <- pmid[k]
+  xpath <- sprintf("//PubmedArticle[MedlineCitation/PMID= %s]//History/PubMedPubDate[@PubStatus]", a)
+  status <- xpathSApply(root,xpath,xmlGetAttr, "PubStatus")
+  status
+  c=1
+  while(c<=length(status)){
+    ArticleHistory$pmid[m] <- pmid[k]
+    m=m+1
+    c=c+1
+  }
+}
+ArticleHistory
+```
 
 # Extracting the ArticleAuthor
 ```{r}
@@ -369,8 +398,6 @@ for(k in 1:length(article_authors$last_name)){
 article_authors
 inner_join(Author, article_authors, by = c("last_name", "fore_name")) %>% select(pmid, author_id)
 ```
-
-
 
 #Extracting ArticleElocation
 ```{r}
@@ -405,12 +432,7 @@ for(k in 1:length(ArticleElocation$e_id)){
 ArticleElocation
 ```
 
-
 ```{r}
-  a<-pmid[1]
-  xpath<- sprintf("//MedlineCitation[PMID= %s]/Article/ELocationID", a)
-  e_id<-xpathSApply(root,xpath,xmlValue)
-  e_id
 ```
 
 ```{sql connection=dbcon}
@@ -424,10 +446,6 @@ ArticleElocation
 ```
 ```{sql connection=dbcon}
 
-```
-
-## Working with the xml
-```{r}
 ```
 
 
