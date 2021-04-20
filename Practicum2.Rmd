@@ -16,7 +16,8 @@ library(XML)
 
 ## Setting up Connection to Database and Parsing XML
 ```{r}
-path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
+path<- "/Users/sanyamharne/Desktop/practicum2/"
+#path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
 fn <- "pubmed_sample.xml"
 fpn = paste0(path, fn)
 
@@ -290,8 +291,6 @@ elocation<- data.frame(xpathSApply(root,xpathEx1,xmlValue))
 xpathEx1 <- "//Article/ELocationID[@EIdType]"
 e_type<- xpathSApply(root,xpathEx1,xmlGetAttr, "EIdType")
 names(elocation)[1]<-"e_id"
-elocation
-e_type
 elocation$e_type<-e_type
 elocation
 
