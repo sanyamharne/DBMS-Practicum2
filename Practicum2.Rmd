@@ -243,7 +243,6 @@ Author <- data.frame(author_id = author_id,
                     initials = initials,
                     affiliation = affiliation,
                     stringsAsFactors = F)
-Author
 a <- Author[!is.na(Author$affiliation),]
 b <- a[!duplicated(a[, 2:3]),]
 Author <- unique(Author[,1:4])
@@ -254,6 +253,7 @@ for(i in 1:nrow(b)){
   a = b[i,]$fore_name
   Author$affiliation[Author$fore_name == a & Author$last_name == b[i,]$last_name] <- b[i,]$c
 }
+Author
 ```
 
 ## Extracting the Article table from the XML
