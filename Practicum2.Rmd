@@ -5,7 +5,7 @@ output: html_document
 ---
 
 ## ERD
-![ERD](Practicum2-ERD.jpeg)
+![ERD](ERD1.jpeg)
 
 ## Importing required libraries
 ```{r}
@@ -78,7 +78,7 @@ journal_id NUMBER,
 issn TEXT,
 issn_type TEXT,
 volume NUMBER,
-issue TEXT,
+issue NUMBER,
 cited_medium TEXT,
 pub_date TEXT,
 title TEXT,
@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS ArticleElocation(
 );
 ```
 
-## Creating AbstarctText table
+## Creating AbstractText table
 ```{sql connection=dbcon}
 CREATE TABLE IF  NOT EXISTS AbstractText(
   article_id NUMBER  NOT NULL,
