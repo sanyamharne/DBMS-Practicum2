@@ -496,8 +496,85 @@ SELECT * FROM ArticleAuthors LIMIT 5;
 SELECT * FROM ArticleAuthors LIMIT 5 ;
 ```
 
+# Section 2 Creating FactTables
+
+## Setting up Connection to Database
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS FactTable1;
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS ArticleF1;
+```
+
+```{sql connection=dbcon}
+DROP TABLE IF EXISTS JournalF1;
+```
+
+## Creating ArticleF1 table
+```{sql connection=dbcon}
+CREATE TABLE IF NOT EXISTS ArticleF1(
+pmid NUMBER,
+title TEXT,
+pagination TEXT,
+language TEXT,
+article_date TEXT,
+pub_model TEXT,
+history_status TEXT,
+pub_date TEXT,
+abs_text TEXT,
+abs_label TEXT,
+abs_category TEXT,
+author_lname TEXT,
+author_fname TEXT,
+author_initials TEXT,
+author_affiliations TEXT,
+e_type TEXT,
+e_id NUMBER,
+journal_id NUMBER,
+PRIMARY KEY(pmid),
+FOREIGN KEY(journal_id) REFERENCES Journal(journal_id)
+);
+```
+
+## Creating JournalF1 table
+```{sql connection=dbcon}
+CREATE TABLE IF NOT EXISTS JournalF1(
+journal_id NUMBER NOT NULL,
+issn TEXT,
+issn_type TEXT,
+volume NUMBER,
+issue NUMBER,
+cited_medium TEXT,
+pub_date TEXT,
+title TEXT,
+iso_abbr TEXT,
+PRIMARY KEY(journal_id)
+)
+```
+
+## Creating FactTable1
+```{sql connection=dbcon}
+article_id NUMBER,
+journal_id NUMBER,
+article_date TEXT,
+FOREIGN KEY(article_id) REFERENCES ArticleF1(pmid),
+FOREIGN KEY(journal_id) REFERENCES JounralF1(journal_id)
+```
+
+
 ## Closing connection to database and freeing the pointer to the parsed XML
 ```{r}
 free(xmlDOM)
 dbDisconnect(dbcon)
 ```
+
+
+
+
+
+
+
+
+
+
