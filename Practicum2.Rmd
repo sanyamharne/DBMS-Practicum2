@@ -12,13 +12,14 @@ output: html_document
 library(xml2)
 library(dplyr)
 library(RSQLite)
+library(sqldf)
 library(XML)
 ```
 
 ## Setting up Connection to Database and Parsing XML
 ```{r}
-path<- "/Users/sanyamharne/Desktop/practicum2/"
-#path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
+#path<- "/Users/sanyamharne/Desktop/practicum2/"
+path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
 fn <- "pubmed_sample.xml"
 fpn = paste0(path, fn)
 
@@ -137,7 +138,7 @@ CREATE TABLE IF  NOT EXISTS AbstractText(
 ## Creating Auhtor table
 ```{sql connection=dbcon}
 CREATE TABLE IF  NOT EXISTS Author(
-  author_id NUMBER AUTO_INCREMENT,
+  author_id NUMBER,
   last_name TEXT,
   fore_name TEXT,
   initials TEXT,
@@ -493,7 +494,7 @@ SELECT * FROM ArticleAuthors LIMIT 5;
 ```
 
 ```{sql connection=dbcon}
-SELECT * FROM ArticleAuthors LIMIT 5 ;
+SELECT * FROM Author LIMIT 5 ;
 ```
 
 # Section 2 Creating FactTables
@@ -514,6 +515,7 @@ DROP TABLE IF EXISTS JournalF1;
 ## Creating ArticleF1 table
 ```{sql connection=dbcon}
 CREATE TABLE IF NOT EXISTS ArticleF1(
+article_id NUMBER AUTO_INCREMENT,
 pmid NUMBER,
 title TEXT,
 pagination TEXT,
@@ -528,11 +530,11 @@ abs_category TEXT,
 author_lname TEXT,
 author_fname TEXT,
 author_initials TEXT,
-author_affiliations TEXT,
+author_affiliation TEXT,
 e_type TEXT,
 e_id NUMBER,
 journal_id NUMBER,
-PRIMARY KEY(pmid),
+PRIMARY KEY(article_id, pmid),
 FOREIGN KEY(journal_id) REFERENCES Journal(journal_id)
 );
 ```
@@ -555,11 +557,39 @@ PRIMARY KEY(journal_id)
 
 ## Creating FactTable1
 ```{sql connection=dbcon}
-article_id NUMBER,
+CREATE TABLE IF NOT EXISTS FactTable1(
+pmid NUMBER,
 journal_id NUMBER,
 article_date TEXT,
 FOREIGN KEY(article_id) REFERENCES ArticleF1(pmid),
-FOREIGN KEY(journal_id) REFERENCES JounralF1(journal_id)
+FOREIGN KEY(journal_id) REFERENCES JounralF1(journal_id))
+```
+
+```{r}
+ArticleF1 <- sqldf("SELECT pmid, title, pagination, language, article_date, pub_model, status AS history_status, ArticleHistory.pub_date, abs_text, label AS 'abs_label', category AS 'abs_category', last_name AS 'author_lname', fore_name AS 'author_fname', initials AS 'author_initials', affiliation AS 'author_affiliation', Elocation.e_type, Elocation.e_id, journal_id
+FROM Article INNER JOIN ArticleHistory ON Article.pmid = ArticleHistory.article_id INNER JOIN AbstractText ON Article.pmid = AbstractText.article_id INNER JOIN ArticleAuthors ON Article.pmid = ArticleAuthors.article_id INNER JOIN Author ON ArticleAuthors.author_id = Author.author_id INNER JOIN ArticleElocation ON Article.pmid = ArticleElocation.article_id INNER JOIN Elocation ON ArticleElocation.e_id = Elocation.e_id;")
+ArticleF1$article_id <- c(1:length(ArticleF1$pmid))
+ArticleF1 <- ArticleF1[,c(19, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18)]
+dbWriteTable(dbcon, name = "ArticleF1", value = ArticleF1, append = TRUE,row.names=FALSE)
+```
+
+```{sql connection=dbcon}
+SELECT * FROM ArticleF1 LIMIT 5;
+```
+
+
+```{r}
+JournalF1 <- Journal
+dbWriteTable(dbcon, name = "JournalF1", value = JournalF1, append = TRUE,row.names=FALSE)
+```
+
+```{sql connection=dbcon}
+SELECT * FROM JournalF1 LIMIT 5;
+```
+
+```{r}
+FactTable1 <- sqldf("SELECT pmid, Journal.journal_id, pub_date FROM Article INNER JOIN Journal ON Article.journal_id = Journal.journal_id")
+FactTable1
 ```
 
 
