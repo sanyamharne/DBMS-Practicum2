@@ -269,7 +269,15 @@ node <- xpathApply(root, "//Article/Pagination")
 pagination <- xmlSApply(node, function(x)xmlValue(x[['MedlinePgn']]))
 node <- xpathApply(root, "//Article")
 language <- xmlSApply(node, function(x)xmlValue(x[['Language']]))
+
+#extracting date in the proper format
+
+
 article_date <- xmlSApply(node, function(x)xmlValue(x[['ArticleDate']]))
+year<- substr(article_date,1,4)
+month<-substr(article_date,5,6)
+day<- substr(article_date,7,8)
+article_date<- paste(year,month,day,sep = " ")
 node <- xpathApply(root, "//Article/Journal")
 journalid <- xmlSApply(node, function(x)xmlValue(x[['ISSN']]))
 xpath <- "//Article[@PubModel]"
@@ -286,6 +294,13 @@ Article <- data.frame(pmid = pmid,
 Article
 ```
 
+```{r}
+
+
+
+```
+
+
 #extracting Eloaction table from XML
 ```{r}
 xpathEx1 <- "//Article/ELocationID"
@@ -297,6 +312,7 @@ elocation$e_type<-e_type
 elocation
 
 ```
+
 
 #extracting AbstractText table from XML
 ```{r}
@@ -350,6 +366,18 @@ xpath<-"//History/PubMedPubDate[@PubStatus]"
 status <- xpathSApply(root,xpath,xmlGetAttr,"PubStatus")
 xpath<-"//History/PubMedPubDate"
 pub_date <- xpathSApply(root,xpath,xmlValue)
+
+#Extractingn date in the proper format
+xpathEx2 <-"//History/PubMedPubDate"
+node<-xpathApply(root,xpathEx2)
+
+
+year <- xmlSApply(node, function(x)xmlValue(x[['Year']]))
+month <-xmlSApply(node, function(x)xmlValue(x[['Month']]))
+day<-xmlSApply(node, function(x)xmlValue(x[['Day']]))
+
+pub_date<- paste(year,month,day,sep = " ")
+
 ArticleHistory<-data.frame(status = status,
                            pub_date = pub_date,
                            stringsAsFactors = F)
@@ -432,6 +460,7 @@ for(k in 1:length(ArticleElocation$e_id)){
 }
 ArticleElocation
 ```
+
 
 ```{r}
 ```
