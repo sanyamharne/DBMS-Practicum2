@@ -515,7 +515,7 @@ DROP TABLE IF EXISTS JournalF1;
 ## Creating ArticleF1 table
 ```{sql connection=dbcon}
 CREATE TABLE IF NOT EXISTS ArticleF1(
-article_id NUMBER AUTO_INCREMENT,
+article_id NUMBER,
 pmid NUMBER,
 title TEXT,
 pagination TEXT,
@@ -619,7 +619,7 @@ DROP TABLE IF EXISTS AuthorF2;
 ## Creating ArticleF2 table
 ```{sql connection=dbcon}
 CREATE TABLE IF NOT EXISTS ArticleF2(
-article_id NUMBER AUTO_INCREMENT,
+article_id NUMBER,
 pmid NUMBER,
 title TEXT,
 pagination TEXT,
