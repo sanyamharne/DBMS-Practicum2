@@ -48,7 +48,7 @@ DROP TABLE IF EXISTS Elocation;
 ```
 
 ```{sql connection=dbcon}
-DROP TABLE IF EXISTS ArticleAuthor;
+DROP TABLE IF EXISTS ArticleAuthors;
 ```
 
 ```{sql connection=dbcon}
@@ -492,7 +492,7 @@ SELECT * FROM ArticleAuthors;
 ```
 
 ```{sql connection=dbcon}
-SELECT * FROM ArticleAuthors;
+SELECT * FROM ArticleHistory;
 ```
 
 ## Closing connection to database and freeing the pointer to the parsed XML
