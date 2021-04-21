@@ -17,8 +17,8 @@ library(XML)
 
 ## Setting up Connection to Database and Parsing XML
 ```{r}
-#path<- "/Users/sanyamharne/Desktop/practicum2/"
-path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
+path<- "/Users/sanyamharne/Desktop/practicum2/"
+#path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
 fn <- "pubmed_sample.xml"
 fpn = paste0(path, fn)
 
@@ -48,7 +48,7 @@ DROP TABLE IF EXISTS Elocation;
 ```
 
 ```{sql connection=dbcon}
-DROP TABLE IF EXISTS ArticleAuthor;
+DROP TABLE IF EXISTS ArticleAuthors;
 ```
 
 ```{sql connection=dbcon}
@@ -222,7 +222,7 @@ Journal$title<- title
 iso_abbr<-xmlSApply(node, function(x)xmlValue(x[['ISOAbbreviation']]))
 Journal$iso_abbr<-iso_abbr
 Journal$journal_id <- c(1:length(Journal$issn))
-Journal
+head(Journal)
 ```
 
 ## Extracting the Author table from the XML
@@ -249,7 +249,7 @@ for(i in 1:nrow(b)){
   a = b[i,]$fore_name
   Author$affiliation[Author$fore_name == a & Author$last_name == b[i,]$last_name] <- b[i,]$c
 }
-Author
+head(Author)
 ```
 
 ## Extracting the Article table from the XML
@@ -292,7 +292,7 @@ Article <- data.frame(pmid = pmid,
                       stringsAsFactors = F)
 Article <- inner_join(Article, Journal, by = c("issn", "journal_volume", "journal_issue")) %>% select(!c(issn, journal_issue, journal_volume, issn_type))
 Article <- Article %>% select(!c(cited_medium, pub_date, title.y, iso_abbr))
-Article
+head(Article)
 ```
 
 ## Extracting Eloaction table from XML
@@ -303,7 +303,7 @@ xpathEx1 <- "//Article/ELocationID[@EIdType]"
 e_type<- xpathSApply(root,xpathEx1,xmlGetAttr, "EIdType")
 names(Elocation)[1]<-"e_id"
 Elocation$e_type<-e_type
-Elocation
+head(Elocation)
 ```
 
 ## Extracting AbstractText table from XML
@@ -343,7 +343,7 @@ for(k in 1:19){
     }
   }
 }
-AbstractText
+head(AbstractText)
 ```
 
 ## Extracting ArticleHistory table from the XML
@@ -380,7 +380,7 @@ for(k in 1:length(pmid)){
     c=c+1
   }
 }
-ArticleHistory
+head(ArticleHistory)
 ```
 
 ## Extracting the ArticleAuthor
@@ -409,8 +409,8 @@ for(k in 1:length(ArticleAuthors$last_name)){
     c=c+1
   }
 }
-ArticleAuthors
 ArticleAuthors <- inner_join(Author, ArticleAuthors, by = c("last_name", "fore_name")) %>% select(pmid, author_id)
+head(ArticleAuthors)
 ```
 
 ## Extracting ArticleElocation
@@ -441,7 +441,7 @@ for(k in 1:length(ArticleElocation$e_id)){
     }
   }
 }
-ArticleElocation
+head(ArticleElocation)
 ```
 
 ## Populating Database
@@ -469,30 +469,31 @@ dbWriteTable(dbcon, name = "ArticleHistory", value = ArticleHistory, append = TR
 
 ## Checking if Database Populated Correctly
 ```{sql connection=dbcon}
-SELECT * FROM Journal;
-```
-```{sql connection=dbcon}
-SELECT * FROM Article;
+SELECT * FROM Journal LIMIT 5;
 ```
 
 ```{sql connection=dbcon}
-SELECT * FROM Elocation;
+SELECT * FROM Article LIMIT 5;
 ```
 
 ```{sql connection=dbcon}
-SELECT * FROM ArticleElocation;
+SELECT * FROM Elocation LIMIT 5;
 ```
 
 ```{sql connection=dbcon}
-SELECT * FROM AbstractText;
+SELECT * FROM ArticleElocation LIMIT 5;
 ```
 
 ```{sql connection=dbcon}
-SELECT * FROM ArticleAuthors;
+SELECT * FROM AbstractText LIMIT 5;
 ```
 
 ```{sql connection=dbcon}
-SELECT * FROM ArticleAuthors;
+SELECT * FROM ArticleAuthors LIMIT 5;
+```
+
+```{sql connection=dbcon}
+SELECT * FROM ArticleAuthors LIMIT 5 ;
 ```
 
 ## Closing connection to database and freeing the pointer to the parsed XML
