@@ -17,8 +17,8 @@ library(XML)
 
 ## Setting up Connection to Database and Parsing XML
 ```{r}
-path<- "/Users/sanyamharne/Desktop/practicum2/"
-#path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
+#path<- "/Users/sanyamharne/Desktop/practicum2/"
+path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
 fn <- "pubmed_sample.xml"
 fpn = paste0(path, fn)
 
@@ -74,15 +74,16 @@ DROP TABLE IF EXISTS AbstractText;
 ## Creating Journal Table
 ```{sql connection=dbcon}
 CREATE TABLE IF NOT EXISTS Journal(
+journal_id NUMBER,
 issn TEXT,
 issn_type TEXT,
-issue TEXT,
 volume NUMBER,
+issue TEXT,
 cited_medium TEXT,
 pub_date TEXT,
 title TEXT,
 iso_abbr TEXT,
-PRIMARY KEY(issn)
+PRIMARY KEY(journal_id)
 );
 ```
 
@@ -96,14 +97,14 @@ language TEXT,
 article_date TEXT,
 pub_model TEXT,
 journal_id NUMBER,
-PRIMARY KEY(article_id),
+PRIMARY KEY(pmid),
 FOREIGN KEY(journal_id) REFERENCES Journal(journal_id)
 );
 ```
 
 ## Creating Elocation Table
 ```{sql connection=dbcon}
-CREATE TABLE IF NOT ExISTS Elocation(
+CREATE TABLE IF NOT EXISTS Elocation(
 e_id TEXT,
 e_type TEXT,
 PRIMARY KEY(e_id)
@@ -116,7 +117,7 @@ CREATE TABLE IF NOT EXISTS ArticleElocation(
   article_id NUMBER,
   e_id TEXT,
   PRIMARY KEY(article_id, e_id),
-  FOREIGN KEY(article_id) REFERENCES Article(article_id),
+  FOREIGN KEY(article_id) REFERENCES Article(pmid),
   FOREIGN KEY(e_id) REFERENCES Elocation(e_id)
 );
 ```
@@ -125,10 +126,11 @@ CREATE TABLE IF NOT EXISTS ArticleElocation(
 ```{sql connection=dbcon}
 CREATE TABLE IF  NOT EXISTS AbstractText(
   article_id NUMBER  NOT NULL,
-  label TEXT NOT NULL,
-  category TEXT NOT NULL,
+  label TEXT,
+  category TEXT,
   abs_text TEXT NOT NULL,
-  PRIMARY KEY(article_id, label, category)  
+  PRIMARY KEY(article_id, label, category),
+  FOREIGN KEY(article_id) REFERENCES Article(pmid)
 );
 ```
 
@@ -139,8 +141,8 @@ CREATE TABLE IF  NOT EXISTS Author(
   last_name TEXT,
   fore_name TEXT,
   initials TEXT,
-  affiliations TEXT ,
-  PRIMARY KEY(author_id)  
+  affiliation TEXT,
+  PRIMARY KEY(author_id)
 );
 ```
 
@@ -150,18 +152,8 @@ CREATE TABLE IF  NOT EXISTS ArticleAuthor(
   article_id NUMBER NOT NULL,
   author_id NUMBER  NOT NULL,
   PRIMARY KEY(author_id, article_id),
-  FOREIGN KEY(article_id) REFERENCES Article(article_id),
+  FOREIGN KEY(article_id) REFERENCES Article(pmid),
   FOREIGN KEY(author_id) REFERENCES Author(author_id)
-);
-```
-
-## Creating ArticlePublicationType
-```{sql connection=dbcon}
-CREATE TABLE IF  NOT EXISTS ArticleAuthor(
-  article_id NUMBER NOT NULL,
-  pub_type TEXT  NOT NULL,
-  PRIMARY KEY(article_id, pub_type),
-  FOREIGN KEY(article_id) REFERENCES Article(article_id)
 );
 ```
 
@@ -172,28 +164,28 @@ CREATE TABLE IF  NOT EXISTS ArticleHistory(
   status TEXT  NOT NULL,
   pub_date DATE,
   PRIMARY KEY(article_id, status),
-  FOREIGN KEY(article_id) REFERENCES Article(article_id)
+  FOREIGN KEY(article_id) REFERENCES Article(pmid)
 );
 ```
 
 
-#extracting the Journal table from XML
+## Extracting the Journal table from XML
 ```{r}
 xpathEx1<- "//Journal/ISSN"
-journal<-data.frame(xpathSApply(root,xpathEx1,xmlValue))
-names(journal)[1]<-"issn"
+Journal<-data.frame(xpathSApply(root,xpathEx1,xmlValue))
+names(Journal)[1]<-"issn"
 xpathEx2<- "//Journal/ISSN[@IssnType]"
 issn_type<-xpathSApply(root,xpathEx2,xmlGetAttr,"IssnType")
-journal$issn_type <- issn_type
+Journal$issn_type <- issn_type
 xpathEx2<- "//Journal/JournalIssue/Volume"
 volume<- xpathSApply(root,xpathEx2,xmlValue)
-journal$volume<- volume
+Journal$journal_volume<- volume
 xpathEx2<- "//Journal/JournalIssue/Issue"
 issue<- xpathSApply(root,xpathEx2,xmlValue)
-journal$issue<- issue
+Journal$journal_issue<- issue
 xpathEx2<- "//Journal/JournalIssue[@CitedMedium]"
 cited_medium<-xpathSApply(root,xpathEx2,xmlGetAttr,"CitedMedium")
-journal$cited_medium <- cited_medium
+Journal$cited_medium <- cited_medium
 
 #extracting pub date
 xpathEx2 <-"//Journal/JournalIssue/PubDate"
@@ -221,15 +213,16 @@ for (m in 1:n) {
   }
 }
 
-journal$pub_date<-pub_date
+Journal$pub_date<-pub_date
 #Extracting title and iso_abbr
 xpathEx2 <-"//Journal"
 node<-xpathApply(root,xpathEx2)
 title <- xmlSApply(node, function(x)xmlValue(x[['Title']]))
-journal$title<- title
+Journal$title<- title
 iso_abbr<-xmlSApply(node, function(x)xmlValue(x[['ISOAbbreviation']]))
-journal$iso_abbr<-iso_abbr
-journal
+Journal$iso_abbr<-iso_abbr
+Journal$journal_id <- c(1:length(Journal$issn))
+Journal
 ```
 
 ## Extracting the Author table from the XML
@@ -277,9 +270,13 @@ article_date <- xmlSApply(node, function(x)xmlValue(x[['ArticleDate']]))
 year<- substr(article_date,1,4)
 month<-substr(article_date,5,6)
 day<- substr(article_date,7,8)
-article_date<- paste(year,month,day,sep = " ")
+article_date <- paste(year,month,day,sep = "-")
+article_date[article_date == "NA-NA-NA"] <- NA
 node <- xpathApply(root, "//Article/Journal")
 journalid <- xmlSApply(node, function(x)xmlValue(x[['ISSN']]))
+node <- xpathApply(root, "//Article/Journal/JournalIssue")
+journal_volume <- xmlSApply(node, function(x)xmlValue(x[['Volume']]))
+journal_issue <- xmlSApply(node, function(x)xmlValue(x[['Issue']]))
 xpath <- "//Article[@PubModel]"
 pub_model <- xpathSApply(root,xpath,xmlGetAttr,"PubModel")
 
@@ -289,40 +286,34 @@ Article <- data.frame(pmid = pmid,
                       language = language,
                       article_date = article_date,
                       pub_model = pub_model,
-                      journal_id = journalid,
+                      issn = journalid,
+                      journal_volume = journal_volume,
+                      journal_issue = journal_issue,
                       stringsAsFactors = F)
+Article <- inner_join(Article, Journal, by = c("issn", "journal_volume", "journal_issue")) %>% select(!c(issn, journal_issue, journal_volume, issn_type))
+Article <- Article %>% select(!c(cited_medium, pub_date, title.y, iso_abbr))
 Article
 ```
 
-```{r}
-
-
-
-```
-
-
-#extracting Eloaction table from XML
+## Extracting Eloaction table from XML
 ```{r}
 xpathEx1 <- "//Article/ELocationID"
-elocation<- data.frame(xpathSApply(root,xpathEx1,xmlValue)) 
+Elocation<- data.frame(xpathSApply(root,xpathEx1,xmlValue)) 
 xpathEx1 <- "//Article/ELocationID[@EIdType]"
 e_type<- xpathSApply(root,xpathEx1,xmlGetAttr, "EIdType")
-names(elocation)[1]<-"e_id"
-elocation$e_type<-e_type
-elocation
-
+names(Elocation)[1]<-"e_id"
+Elocation$e_type<-e_type
+Elocation
 ```
 
-
-#extracting AbstractText table from XML
+## Extracting AbstractText table from XML
 ```{r}
 #Node by Node traversal to get the correct artile id for the abstract text
 xpathEx1<-"//MedlineCitation/PMID"
 pmid<-xpathSApply(root,xpathEx1,xmlValue)
-
 xpath<-"//Abstract/AbstractText"
-abstract_text<-data.frame(xpathSApply(root,xpath,xmlValue))
-names(abstract_text)[1]<-"abs_text"
+AbstractText<-data.frame(xpathSApply(root,xpath,xmlValue))
+names(AbstractText)[1]<-"abs_text"
 
 m=1
 for(k in 1:19){
@@ -336,24 +327,23 @@ for(k in 1:19){
   xpath<- sprintf("//MedlineCitation[PMID= %s]//Abstract/AbstractText[@NlmCategory]", a)
   nlmcategory<-xpathSApply(root,xpath,xmlGetAttr,"NlmCategory")
   if(length(txt)==1){
-      abstract_text$label[m]=NA
-      abstract_text$nlmcategory[m]=NA
+      AbstractText$label[m]=NA
+      AbstractText$nlmcategory[m]=NA
       m=m+1
   }
   else{
     c=1 
     while(c<=length(txt)){
-      abstract_text$pmid[m]<-pmid[k]
-      abstract_text$label[m]<-label[c]
-      abstract_text$nlmcategory[m]<- nlmcategory[c]
+      AbstractText$pmid[m]<-pmid[k]
+      AbstractText$label[m]<-label[c]
+      AbstractText$nlmcategory[m]<- nlmcategory[c]
       #abstract_text$abs_text[m]<- txt[c]
       m=m+1
       c=c+1
     }
-    
   }
 }
-abstract_text
+AbstractText
 ```
 
 ## Extracting ArticleHistory table from the XML
@@ -361,13 +351,9 @@ abstract_text
 #Node by Node traversal to get the correct artile id for the abstract text
 xpathEx1<-"//MedlineCitation/PMID"
 pmid<-xpathSApply(root,xpathEx1,xmlValue)
-
 xpath<-"//History/PubMedPubDate[@PubStatus]"
 status <- xpathSApply(root,xpath,xmlGetAttr,"PubStatus")
-xpath<-"//History/PubMedPubDate"
-pub_date <- xpathSApply(root,xpath,xmlValue)
-
-#Extractingn date in the proper format
+#Extracting date in the proper format
 xpathEx2 <-"//History/PubMedPubDate"
 node<-xpathApply(root,xpathEx2)
 
@@ -376,8 +362,7 @@ year <- xmlSApply(node, function(x)xmlValue(x[['Year']]))
 month <-xmlSApply(node, function(x)xmlValue(x[['Month']]))
 day<-xmlSApply(node, function(x)xmlValue(x[['Day']]))
 
-pub_date<- paste(year,month,day,sep = " ")
-
+pub_date<- paste(year,month,day,sep = "-")
 ArticleHistory<-data.frame(status = status,
                            pub_date = pub_date,
                            stringsAsFactors = F)
@@ -398,42 +383,41 @@ for(k in 1:length(pmid)){
 ArticleHistory
 ```
 
-# Extracting the ArticleAuthor
+## Extracting the ArticleAuthor
 ```{r}
 xpathEx1 = "//AuthorList/Author/LastName"
 last_name <- xpathSApply(root, xpathEx1, xmlValue)
 xpathEx1 = "//AuthorList/Author/ForeName "
 fore_name <- xpathSApply(root, xpathEx1, xmlValue)
-article_authors<- data.frame(last_name = last_name,
+ArticleAuthors<- data.frame(last_name = last_name,
                              fore_name = fore_name,
                              stringsAsFactors = F)
 
 #Node by Node traversal to get the correct artile id for the abstract text
 xpathEx1<-"//MedlineCitation/PMID"
 pmid<-xpathSApply(root,xpathEx1,xmlValue)
-article_authors$pmid <- c(1:length(article_authors$last_name))
+ArticleAuthors$pmid <- c(1:length(ArticleAuthors$last_name))
 m = 1
-for(k in 1:length(article_authors$last_name)){
+for(k in 1:length(ArticleAuthors$last_name)){
   a<-pmid[k]
   xpath<- sprintf("//MedlineCitation[PMID= %s]//Author/LastName", a)
   auth<-xpathSApply(root,xpath,xmlValue)
   c = 1
   while(c<=length(auth)){
-    article_authors$pmid[m] <- pmid[k]
+    ArticleAuthors$pmid[m] <- pmid[k]
     m=m+1
     c=c+1
   }
 }
-article_authors
-inner_join(Author, article_authors, by = c("last_name", "fore_name")) %>% select(pmid, author_id)
+ArticleAuthors
+ArticleAuthors <- inner_join(Author, ArticleAuthors, by = c("last_name", "fore_name")) %>% select(pmid, author_id)
 ```
 
-#Extracting ArticleElocation
+## Extracting ArticleElocation
 ```{r}
 xpathEx1 = "//ELocationID"
 e_id <- xpathSApply(root, xpathEx1, xmlValue)
 ArticleElocation <- data.frame(e_id = e_id, stringsAsFactors = F)
-
 #Node by Node traversal to get the correct artile id for the abstract text
 xpathEx1<-"//MedlineCitation/PMID"
 pmid<-xpathSApply(root,xpathEx1,xmlValue)
@@ -456,32 +440,63 @@ for(k in 1:length(ArticleElocation$e_id)){
       c=c+1
     }
   }
- 
 }
 ArticleElocation
 ```
 
-
+## Populating Database
 ```{r}
+Journal <- Journal[, c(9, 1, 2, 3, 4, 5, 6, 7, 8)]
+names(Journal) <- c("journal_id", "issn", "issn_type", "volume", "issue", "cited_medium", "pub_date", "title", "iso_abbr")
+dbWriteTable(dbcon, name = "Journal", value = Journal, append = TRUE,row.names=FALSE)
+names(Article) <- c("pmid", "title", "pagination", "language", "article_date", "pub_model", "journal_id")
+dbWriteTable(dbcon, name = "Article", value = Article, append = TRUE,row.names=FALSE)
+names(Elocation) <- c("e_id", "e_type")
+dbWriteTable(dbcon, name = "Elocation", value = Elocation, append = TRUE,row.names=FALSE)
+ArticleElocation <- ArticleElocation[, c(2, 1)]
+names(ArticleElocation) <- c("article_id", "e_id")
+dbWriteTable(dbcon, name = "ArticleElocation", value = ArticleElocation, append = TRUE,row.names=FALSE)
+AbstractText <- AbstractText[, c(2, 3, 4, 1)]
+names(AbstractText) <- c("article_id", "label", "category", "abs_text")
+dbWriteTable(dbcon, name = "AbstractText", value = AbstractText, append = TRUE,row.names=FALSE)
+dbWriteTable(dbcon, name = "Author", value = Author, append = TRUE,row.names=FALSE)
+names(ArticleAuthors) <- c("article_id", "author_id")
+dbWriteTable(dbcon, name = "ArticleAuthors", value = ArticleAuthors, append = TRUE,row.names=FALSE)
+ArticleHistory <- ArticleHistory[, c(3, 1, 2)]
+names(ArticleHistory) <- c("article_id", "status", "pub_date")
+dbWriteTable(dbcon, name = "ArticleHistory", value = ArticleHistory, append = TRUE,row.names=FALSE)
+```
+
+## Checking if Database Populated Correctly
+```{sql connection=dbcon}
+SELECT * FROM Journal;
+```
+```{sql connection=dbcon}
+SELECT * FROM Article;
 ```
 
 ```{sql connection=dbcon}
-
+SELECT * FROM Elocation;
 ```
+
 ```{sql connection=dbcon}
-
+SELECT * FROM ArticleElocation;
 ```
+
 ```{sql connection=dbcon}
-
+SELECT * FROM AbstractText;
 ```
+
 ```{sql connection=dbcon}
-
+SELECT * FROM ArticleAuthors;
 ```
 
+```{sql connection=dbcon}
+SELECT * FROM ArticleAuthors;
+```
 
 ## Closing connection to database and freeing the pointer to the parsed XML
 ```{r}
 free(xmlDOM)
 dbDisconnect(dbcon)
 ```
-
