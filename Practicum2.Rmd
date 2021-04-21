@@ -17,8 +17,8 @@ library(XML)
 
 ## Setting up Connection to Database and Parsing XML
 ```{r}
-#path<- "/Users/sanyamharne/Desktop/practicum2/"
-path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
+path<- "/Users/sanyamharne/Desktop/practicum2/"
+#path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
 fn <- "pubmed_sample.xml"
 fpn = paste0(path, fn)
 
@@ -89,11 +89,12 @@ PRIMARY KEY(issn)
 ## Creating Article Table
 ```{sql connection=dbcon}
 CREATE TABLE IF NOT EXISTS Article(
-article_id NUMBER,
+pmid NUMBER,
 title TEXT,
 pagination TEXT,
 language TEXT,
 article_date TEXT,
+pub_model TEXT,
 journal_id NUMBER,
 PRIMARY KEY(article_id),
 FOREIGN KEY(journal_id) REFERENCES Journal(journal_id)
@@ -126,7 +127,7 @@ CREATE TABLE IF  NOT EXISTS AbstractText(
   article_id NUMBER  NOT NULL,
   label TEXT NOT NULL,
   category TEXT NOT NULL,
-  abstract_text TEXT NOT NULL,
+  abs_text TEXT NOT NULL,
   PRIMARY KEY(article_id, label, category)  
 );
 ```
