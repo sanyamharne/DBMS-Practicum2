@@ -499,6 +499,9 @@ SELECT * FROM Author LIMIT 5 ;
 
 # Section 2 Creating FactTables
 
+## ERD
+![ERD](FactTable1.jpeg)
+
 ## Dropping tables
 ```{sql connection=dbcon}
 DROP TABLE IF EXISTS FactTable1;
@@ -596,6 +599,9 @@ dbWriteTable(dbcon, name = "FactTable1", value = FactTable1, append = TRUE,row.n
 ```{sql connection=dbcon}
 SELECT * FROM FactTable1 LIMIT 5;
 ```
+
+## ERD
+![ERD](FactTable2.jpeg)
 
 # Section 3 Creating FactTables
 
