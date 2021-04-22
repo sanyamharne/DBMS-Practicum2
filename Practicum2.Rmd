@@ -727,6 +727,16 @@ dbWriteTable(dbcon, name = "FactTable2", value = FactTable2, append = TRUE,row.n
 SELECT * FROM FactTable2 LIMIT 5;
 ```
 
+# Section 3
+
+## Queries
+```{r}
+sqlcmd<- "SELECT article "
+seasonalPattern <- 
+```
+
+
+
 ## Closing connection to database and freeing the pointer to the parsed XML
 ```{r}
 free(xmlDOM)
