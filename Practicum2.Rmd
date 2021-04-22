@@ -18,8 +18,8 @@ library(XML)
 
 ## Setting up Connection to Database and Parsing XML
 ```{r}
-#path<- "/Users/sanyamharne/Desktop/practicum2/"
-path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
+path<- "/Users/sanyamharne/Desktop/practicum2/"
+#path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
 fn <- "pubmed_sample.xml"
 fpn = paste0(path, fn)
 
@@ -729,18 +729,6 @@ dbWriteTable(dbcon, name = "PublicationFacts", value = PublicationFacts, append 
 SELECT * FROM PublicationFacts LIMIT 5;
 ```
 
-<<<<<<< HEAD
-# Section 3
-
-## Queries
-```{r}
-sqlcmd<- "SELECT article "
-seasonalPattern <- 
-```
-
-
-
-=======
 ## Section 3: Data analysis
 ```{r}
 ArticleFacts
@@ -754,8 +742,6 @@ seasonal_pattern[3,]$NumOfPub <- sqldf("SELECT count(*) FROM ArticleFacts WHERE 
 seasonal_pattern[4,]$NumOfPub <- sqldf("SELECT count(*) FROM ArticleFacts WHERE article_date LIKE '% Oct%' OR article_date LIKE '%Nov%' OR article_date LIKE '%Dec%'")
 seasonal_pattern
 ```
-
-
 
 ## Closing connection to database and freeing the pointer to the parsed XML
 ```{r}
