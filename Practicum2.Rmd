@@ -14,13 +14,13 @@ library(dplyr)
 library(RSQLite)
 library(sqldf)
 library(XML)
-library(ggplot2)
+
 ```
 
 ## Setting up Connection to Database and Parsing XML
 ```{r}
-#path<- "/Users/sanyamharne/Desktop/practicum2/"
-path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
+path<- "/Users/sanyamharne/Desktop/practicum2/"
+#path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
 fn <- "pubmed_sample.xml"
 fpn = paste0(path, fn)
 
@@ -742,14 +742,24 @@ seasonal_pattern[3, "numOfPubs"] = sqldf("SELECT count(*) FROM a WHERE months LI
 seasonal_pattern[4, "numOfPubs"] = sqldf("SELECT count(*) FROM a WHERE months LIKE 'Oct' OR months LIKE 'Nov' OR months LIKE 'Dec'")
 publicationsPerAuthor <- sqldf("SELECT author_lname, author_fname, COUNT(*) FROM PublicationFacts GROUP BY author_fname, author_lname")
 publicationsPerJournal <- sqldf("SELECT journal_title, COUNT(DISTINCT pmid) FROM PublicationFacts GROUP BY journal_title")
-seasonal_pattern
-publicationsPerAuthor
-publicationsPerJournal
+
+# Finding Yearly pattern
+b <- sqldf("SELECT article_date FROM ArticleFacts")
+b<- data.frame(years = substr(b[,], 1,4))
+yearly_pattern <- data.frame(years = c("2012", "2013"), stringsAsFactors = F)
+yearly_pattern$numOfPubs<-0
+yearly_pattern[1, "numOfPubs"] = sqldf("SELECT count(*) FROM b WHERE years LIKE '2012'")
+yearly_pattern[2, "numOfPubs"] = sqldf("SELECT count(*) FROM b WHERE years LIKE '2013'")
+head(yearly_pattern)
+head(seasonal_pattern)
+head(publicationsPerAuthor)
+head(publicationsPerJournal)
 ```
 
 ## Part 3: 2. Plotting/Visualizing the analysis
 ```{r}
-barplot(seasonal_pattern$numOfPubs, names.arg = seasonal_pattern$quarter, main = "Seasonal Pattern of Publications per quarter", xlab = "Quarters", ylab = "Nmber of Publications")
+barplot(seasonal_pattern$numOfPubs, names.arg = seasonal_pattern$quarter, main = "Seasonal Pattern of Publications per quarter", xlab = "Quarters", ylab = "Number of Publications")
+barplot(yearly_pattern$numOfPubs, names.arg = yearly_pattern$years, main = " Pattern of Publications per year", xlab = "Years", ylab = "Number of Publications")
 ```
 
 
