@@ -14,6 +14,7 @@ library(dplyr)
 library(RSQLite)
 library(sqldf)
 library(XML)
+library(ggplot2)
 ```
 
 ## Setting up Connection to Database and Parsing XML
@@ -731,8 +732,7 @@ SELECT * FROM PublicationFacts LIMIT 5;
 
 ## Section 3: Data analysis
 ```{r}
-ArticleFacts
-seasonal_pattern <- data.frame(Quarter = c("Jan-Mar", "Apr-June", "July-Sept", "Oct-Dec"), stringsAsFactors = F)
+seasonal_pattern <- data.frame(quarter = c("Jan-Mar", "Apr-June", "July-Sept", "Oct-Dec"), stringsAsFactors = F)
 a <- sqldf("SELECT article_date FROM ArticleFacts")
 a <- data.frame(months = substr(a[,], 6, 8))
 seasonal_pattern$numOfPubs <- 0
@@ -749,7 +749,7 @@ publicationsPerJournal
 
 ## Part 3: 2. Plotting/Visualizing the analysis
 ```{r}
-
+barplot(seasonal_pattern$numOfPubs, names.arg = seasonal_pattern$quarter, main = "Seasonal Pattern of Publications per quarter", xlab = "Quarters", ylab = "Nmber of Publications")
 ```
 
 
