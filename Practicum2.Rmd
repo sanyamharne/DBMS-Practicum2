@@ -19,8 +19,8 @@ library(XML)
 
 ## Setting up Connection to Database and Parsing XML
 ```{r}
-path<- "/Users/sanyamharne/Desktop/practicum2/"
-#path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
+#path<- "/Users/sanyamharne/Desktop/practicum2/"
+path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum-2/"
 fn <- "pubmed_sample.xml"
 fpn = paste0(path, fn)
 
@@ -740,26 +740,37 @@ seasonal_pattern[1, "numOfPubs"] = sqldf("SELECT count(*) FROM a WHERE months LI
 seasonal_pattern[2, "numOfPubs"] = sqldf("SELECT count(*) FROM a WHERE months LIKE 'Apr' OR months LIKE 'May' OR months LIKE 'Jun'")
 seasonal_pattern[3, "numOfPubs"] = sqldf("SELECT count(*) FROM a WHERE months LIKE 'Jul' OR months LIKE 'Aug' OR months LIKE 'Sep'")
 seasonal_pattern[4, "numOfPubs"] = sqldf("SELECT count(*) FROM a WHERE months LIKE 'Oct' OR months LIKE 'Nov' OR months LIKE 'Dec'")
-publicationsPerAuthor <- sqldf("SELECT author_lname, author_fname, COUNT(*) FROM PublicationFacts GROUP BY author_fname, author_lname")
-publicationsPerJournal <- sqldf("SELECT journal_title, COUNT(DISTINCT pmid) FROM PublicationFacts GROUP BY journal_title")
+names(seasonal_pattern) <- c("quarter", "Number of Publications")
+publicationsPerAuthor <- sqldf("SELECT author_lname, author_fname, COUNT(*) AS 'Number of Publications' FROM PublicationFacts GROUP BY author_fname, author_lname")
+publicationsPerJournal <- sqldf("SELECT journal_title, COUNT(DISTINCT pmid) AS 'Number of Publications' FROM PublicationFacts GROUP BY journal_title")
+
+#Finding Monthly pattern
+monthly_pattern <- sqldf("SELECT *, count(*) FROM a GROUP BY months")
+monthly_pattern <- monthly_pattern[c(6, 5, 9, 2, 10, 8, 7, 3, 12, 1, 11, 4),]
+monthly_pattern[10, "months"] = "Oct"
+names(monthly_pattern) <- c("month", "Number of Publications")
 
 # Finding Yearly pattern
 b <- sqldf("SELECT article_date FROM ArticleFacts")
-b<- data.frame(years = substr(b[,], 1,4))
-yearly_pattern <- data.frame(years = c("2012", "2013"), stringsAsFactors = F)
+b <- data.frame(year = substr(b[,], 1,4))
+yearly_pattern <- data.frame(year = c("2012", "2013"), stringsAsFactors = F)
 yearly_pattern$numOfPubs<-0
-yearly_pattern[1, "numOfPubs"] = sqldf("SELECT count(*) FROM b WHERE years LIKE '2012'")
-yearly_pattern[2, "numOfPubs"] = sqldf("SELECT count(*) FROM b WHERE years LIKE '2013'")
-head(yearly_pattern)
+yearly_pattern[1, "numOfPubs"] = sqldf("SELECT count(*) FROM b WHERE year LIKE '2012' OR year LIKE '12'")
+yearly_pattern[2, "numOfPubs"] = sqldf("SELECT count(*) FROM b WHERE year LIKE '2013'")
+names(yearly_pattern) <- c("year", "Number of Publications")
+
 head(seasonal_pattern)
+monthly_pattern
+yearly_pattern
 head(publicationsPerAuthor)
 head(publicationsPerJournal)
 ```
 
 ## Part 3: 2. Plotting/Visualizing the analysis
 ```{r}
-barplot(seasonal_pattern$numOfPubs, names.arg = seasonal_pattern$quarter, main = "Seasonal Pattern of Publications per quarter", xlab = "Quarters", ylab = "Number of Publications")
-barplot(yearly_pattern$numOfPubs, names.arg = yearly_pattern$years, main = " Pattern of Publications per year", xlab = "Years", ylab = "Number of Publications")
+barplot(seasonal_pattern$'Number of Publications', names.arg = seasonal_pattern$quarter, main = "Seasonal Pattern of Publications per quarter", xlab = "Quarters", ylab = "Number of Publications")
+barplot(monthly_pattern$'Number of Publications', names.arg = monthly_pattern$month, main = " Pattern of Publications per month", xlab = "Months", ylab = "Number of Publications")
+barplot(yearly_pattern$'Number of Publications', names.arg = yearly_pattern$year, main = " Pattern of Publications per year", xlab = "Years", ylab = "Number of Publications")
 ```
 
 
