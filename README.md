@@ -3,7 +3,7 @@ Mine A Database
 
 ------------
 ## Assumptions : 
-1. Omited  elements from the XML that  did not  prove to be useful or  helpful during the data analysis.
+1. Omitted  elements from the XML that  did not  prove to be useful or  helpful during the data analysis.
 2. Created Facttables based on the analysis that was required.
 3. Considered publications date as the date for data analysis since article date had a lot of inconsistencies .
 4. publication dates with out any month are considered to be in the month of January.
