@@ -7,7 +7,12 @@ output: html_document
 ## ERD
 ![ERD](ERD1.jpeg)
 
-options 
+## Assumptions : 
+1. Created Fact-tables based on the analysis that was required.
+2. Considered publications date as the date for data analysis since article date had a lot of inconsistencies.
+3. There are publication dates with out any month.
+4. Publications made across months are considered to be a part of the prior month for analysis purposes.
+5. An inconsistent year "12" in publication date is considered as "2012".
 
 ## Importing required libraries
 ```{r}
@@ -16,7 +21,7 @@ library(dplyr)
 library(RSQLite)
 library(sqldf)
 library(XML)
-
+library(ggplot2)
 ```
 
 ## Setting up Connection to Database and Parsing XML
@@ -83,23 +88,23 @@ DROP TABLE IF EXISTS ArticleFacts;
 ```
 
 ```{sql connection=dbcon}
-DROP TABLE IF EXISTS ArticleF1;
+DROP TABLE IF EXISTS ArticleDimension1;
 ```
 
 ```{sql connection=dbcon}
-DROP TABLE IF EXISTS JournalF1;
+DROP TABLE IF EXISTS JournalDimension1;
 ```
 
 ```{sql connection=dbcon}
-DROP TABLE IF EXISTS ArticleF2;
+DROP TABLE IF EXISTS ArticleDimension2;
 ```
 
 ```{sql connection=dbcon}
-DROP TABLE IF EXISTS JournalF2;
+DROP TABLE IF EXISTS JournalDimension2;
 ```
 
 ```{sql connection=dbcon}
-DROP TABLE IF EXISTS AuthorF2;
+DROP TABLE IF EXISTS AuthorDimension2;
 ```
 
 ## Creating Journal Table
@@ -325,7 +330,8 @@ Article <- data.frame(pmid = pmid,
                       journal_volume = journal_volume,
                       journal_issue = journal_issue,
                       stringsAsFactors = F)
-Article <- inner_join(Article, Journal, by = c("issn", "journal_volume", "journal_issue")) %>% select(!c(issn, journal_issue, journal_volume, issn_type))
+Article <- inner_join(Article, Journal, by = c("issn", "journal_volume", "journal_issue")) %>% 
+            select(!c(issn, journal_issue, journal_volume, issn_type))
 Article <- Article %>% select(!c(cited_medium, pub_date, title.y, iso_abbr))
 head(Article)
 ```
@@ -445,7 +451,8 @@ for(k in 1:length(ArticleAuthors$last_name)){
     c=c+1
   }
 }
-ArticleAuthors <- inner_join(Author, ArticleAuthors, by = c("last_name", "fore_name")) %>% select(pmid, author_id)
+ArticleAuthors <- inner_join(Author, ArticleAuthors, by = c("last_name", "fore_name")) %>% 
+                  select(pmid, author_id)
 head(ArticleAuthors)
 ```
 
@@ -484,7 +491,8 @@ head(ArticleElocation)
 ## Populating Database
 ```{r}
 Journal <- Journal[, c(9, 1, 2, 3, 4, 5, 6, 7, 8)]
-names(Journal) <- c("journal_id", "issn", "issn_type", "volume", "issue", "cited_medium", "pub_date", "title", "iso_abbr")
+names(Journal) <- 
+  c("journal_id", "issn", "issn_type", "volume", "issue", "cited_medium", "pub_date", "title", "iso_abbr")
 dbWriteTable(dbcon, name = "Journal", value = Journal, append = TRUE,row.names=FALSE)
 names(Article) <- c("pmid", "title", "pagination", "language", "article_date", "pub_model", "journal_id")
 dbWriteTable(dbcon, name = "Article", value = Article, append = TRUE,row.names=FALSE)
@@ -539,9 +547,9 @@ SELECT * FROM Author LIMIT 5 ;
 ## ERD
 ![ERD](ArticleFacts.jpeg)
 
-## Creating ArticleF1 table
+## Creating ArticleDimension1 table
 ```{sql connection=dbcon}
-CREATE TABLE IF NOT EXISTS ArticleF1(
+CREATE TABLE IF NOT EXISTS ArticleDimension1(
 article_id NUMBER,
 pmid NUMBER,
 pagination TEXT,
@@ -563,9 +571,9 @@ PRIMARY KEY(article_id, pmid)
 );
 ```
 
-## Creating JournalF1 table
+## Creating JournalDimension1 table
 ```{sql connection=dbcon}
-CREATE TABLE IF NOT EXISTS JournalF1(
+CREATE TABLE IF NOT EXISTS JournalDimension1(
 journal_id NUMBER NOT NULL,
 issn TEXT,
 issn_type TEXT,
@@ -586,8 +594,8 @@ pmid NUMBER,
 journal_id NUMBER,
 article_date TEXT,
 article_title TEXt,
-FOREIGN KEY(pmid) REFERENCES ArticleF1(pmid),
-FOREIGN KEY(journal_id) REFERENCES JournalF1(journal_id)
+FOREIGN KEY(pmid) REFERENCES ArticleDimension1(pmid),
+FOREIGN KEY(journal_id) REFERENCES JournalDimension1(journal_id)
 );
 ```
 
@@ -596,27 +604,27 @@ FOREIGN KEY(journal_id) REFERENCES JournalF1(journal_id)
 ## ERD
 ![ERD](Status2.png)
 
-## Populating ArticleF1 Table
+## Populating ArticleDimension1 Table
 ```{r}
-ArticleF1 <- sqldf("SELECT pmid, pagination, language, article_date, pub_model, status AS history_status, ArticleHistory.pub_date, abs_text, label AS 'abs_label', category AS 'abs_category', last_name AS 'author_lname', fore_name AS 'author_fname', initials AS 'author_initials', affiliation AS 'author_affiliation', Elocation.e_type, Elocation.e_id
+ArticleDimension1 <- sqldf("SELECT pmid, pagination, language, article_date, pub_model, status AS history_status, ArticleHistory.pub_date, abs_text, label AS 'abs_label', category AS 'abs_category', last_name AS 'author_lname', fore_name AS 'author_fname', initials AS 'author_initials', affiliation AS 'author_affiliation', Elocation.e_type, Elocation.e_id
 FROM Article INNER JOIN ArticleHistory ON Article.pmid = ArticleHistory.article_id INNER JOIN AbstractText ON Article.pmid = AbstractText.article_id INNER JOIN ArticleAuthors ON Article.pmid = ArticleAuthors.article_id INNER JOIN Author ON ArticleAuthors.author_id = Author.author_id INNER JOIN ArticleElocation ON Article.pmid = ArticleElocation.article_id INNER JOIN Elocation ON ArticleElocation.e_id = Elocation.e_id;")
-ArticleF1$article_id <- c(1:length(ArticleF1$pmid))
-ArticleF1 <- ArticleF1[,c(17, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)]
-dbWriteTable(dbcon, name = "ArticleF1", value = ArticleF1, append = TRUE,row.names=FALSE)
+ArticleDimension1$article_id <- c(1:length(ArticleDimension1$pmid))
+ArticleDimension1 <- ArticleDimension1[,c(17, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)]
+dbWriteTable(dbcon, name = "ArticleDimension1", value = ArticleDimension1, append = TRUE,row.names=FALSE)
 ```
 
 ```{sql connection=dbcon}
-SELECT * FROM ArticleF1 LIMIT 5;
+SELECT * FROM ArticleDimension1 LIMIT 5;
 ```
 
-## Populating JournalF1 Table
+## Populating JournalDimension1 Table
 ```{r}
-JournalF1 <- Journal
-dbWriteTable(dbcon, name = "JournalF1", value = JournalF1, append = TRUE,row.names=FALSE)
+JournalDimension1 <- Journal
+dbWriteTable(dbcon, name = "JournalDimension1", value = JournalDimension1, append = TRUE,row.names=FALSE)
 ```
 
 ```{sql connection=dbcon}
-SELECT * FROM JournalF1 LIMIT 5;
+SELECT * FROM JournalDimension1 LIMIT 5;
 ```
 
 ## Populating ArticleFacts Table
@@ -633,9 +641,9 @@ SELECT * FROM ArticleFacts LIMIT 5;
 ## ERD
 ![ERD](PublicationFacts.jpeg)
 
-## Creating ArticleF2 table
+## Creating ArticleDimension2 table
 ```{sql connection=dbcon}
-CREATE TABLE IF NOT EXISTS ArticleF2(
+CREATE TABLE IF NOT EXISTS ArticleDimension2(
 article_id NUMBER,
 pmid NUMBER,
 pagination TEXT,
@@ -653,9 +661,9 @@ PRIMARY KEY(article_id, pmid)
 );
 ```
 
-## Creating JournalF2 table
+## Creating JournalDimension2 table
 ```{sql connection=dbcon}
-CREATE TABLE IF NOT EXISTS JournalF2(
+CREATE TABLE IF NOT EXISTS JournalDimension2(
 journal_id NUMBER NOT NULL,
 issn TEXT,
 issn_type TEXT,
@@ -668,9 +676,9 @@ PRIMARY KEY(journal_id)
 );
 ```
 
-## Creating AuthorF2 table
+## Creating AuthorDimension2 table
 ```{sql connection=dbcon}
-CREATE TABLE IF NOT EXISTS AuthorF2(
+CREATE TABLE IF NOT EXISTS AuthorDimension2(
   author_id NUMBER,
   initials TEXT,
   affiliation TEXT,
@@ -689,9 +697,9 @@ journal_title TEXT,
 author_lname TEXT,
 author_fname TEXT,
 article_title TEXT,
-FOREIGN KEY(pmid) REFERENCES ArticleF2(pmid),
-FOREIGN KEY(journal_id) REFERENCES JournalF2(journal_id),
-FOREIGN KEY(author_id) REFERENCES AuthorF2(author_id)
+FOREIGN KEY(pmid) REFERENCES ArticleDimension2(pmid),
+FOREIGN KEY(journal_id) REFERENCES JournalDimension2(journal_id),
+FOREIGN KEY(author_id) REFERENCES AuthorDimension2(author_id)
 );
 ```
 
@@ -700,37 +708,37 @@ FOREIGN KEY(author_id) REFERENCES AuthorF2(author_id)
 ## ERD
 ![ERD](Status3.png)
 
-## Populating ArticleF2 Table
+## Populating ArticleDimension2 Table
 ```{r}
-ArticleF2 <- sqldf("SELECT pmid, pagination, language, article_date, pub_model, status AS history_status, ArticleHistory.pub_date, abs_text, label AS 'abs_label', category AS 'abs_category', Elocation.e_type, Elocation.e_id
+ArticleDimension2 <- sqldf("SELECT pmid, pagination, language, article_date, pub_model, status AS history_status, ArticleHistory.pub_date, abs_text, label AS 'abs_label', category AS 'abs_category', Elocation.e_type, Elocation.e_id
 FROM Article INNER JOIN ArticleHistory ON Article.pmid = ArticleHistory.article_id INNER JOIN AbstractText ON Article.pmid = AbstractText.article_id INNER JOIN ArticleElocation ON Article.pmid = ArticleElocation.article_id INNER JOIN Elocation ON ArticleElocation.e_id = Elocation.e_id;")
-ArticleF2$article_id <- c(1:length(ArticleF2$pmid))
-ArticleF2 <- ArticleF2[,c(13, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)]
-dbWriteTable(dbcon, name = "ArticleF2", value = ArticleF2, append = TRUE,row.names=FALSE)
+ArticleDimension2$article_id <- c(1:length(ArticleDimension2$pmid))
+ArticleDimension2 <- ArticleDimension2[,c(13, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)]
+dbWriteTable(dbcon, name = "ArticleDimension2", value = ArticleDimension2, append = TRUE,row.names=FALSE)
 ```
 
 ```{sql connection=dbcon}
-SELECT * FROM ArticleF2 LIMIT 5;
+SELECT * FROM ArticleDimension2 LIMIT 5;
 ```
 
-## Populating JournalF2 Table
+## Populating JournalDimension2 Table
 ```{r}
-JournalF2 <- Journal[,c(1, 2, 3, 4, 5, 6, 7, 9)]
-dbWriteTable(dbcon, name = "JournalF2", value = JournalF2, append = TRUE,row.names=FALSE)
+JournalDimension2 <- Journal[,c(1, 2, 3, 4, 5, 6, 7, 9)]
+dbWriteTable(dbcon, name = "JournalDimension2", value = JournalDimension2, append = TRUE,row.names=FALSE)
 ```
 
 ```{sql connection=dbcon}
-SELECT * FROM JournalF2 LIMIT 5;
+SELECT * FROM JournalDimension2 LIMIT 5;
 ```
 
-## Populating AuthorF2 Table
+## Populating AuthorDimension2 Table
 ```{r}
-AuthorF2 <- Author[, c(1, 4, 5)]
-dbWriteTable(dbcon, name = "AuthorF2", value = AuthorF2, append = TRUE,row.names=FALSE)
+AuthorDimension2 <- Author[, c(1, 4, 5)]
+dbWriteTable(dbcon, name = "AuthorDimension2", value = AuthorDimension2, append = TRUE,row.names=FALSE)
 ```
 
 ```{sql connection=dbcon}
-SELECT * FROM AuthorF2 LIMIT 5;
+SELECT * FROM AuthorDimension2 LIMIT 5;
 ```
 
 ## Populating PublicationFacts Table
@@ -781,8 +789,14 @@ head(publicationsPerJournal)
 
 ## Part 3: 2. Plotting/Visualizing the analysis
 ```{r}
+names(seasonal_pattern) <- c("quarter", "Number of Publications")
 barplot(seasonal_pattern$'Number of Publications', names.arg = seasonal_pattern$quarter, main = "Seasonal Pattern of Publications per quarter", xlab = "Quarters", ylab = "Number of Publications")
+ggplot(seasonal_pattern, aes(x=quarter, y=`Number of Publications`, group = 1)) + geom_line(color="#69b3a2", size=2, alpha=0.9, linetype=1) + geom_point(color="blue", size=3) + ggtitle("Seasonal Pattern of Publications per quarter")
+monthly_pattern <- data.frame(month = monthly_pattern$month,
+                              "Number of Publications" = monthly_pattern$'Number of Publications')
+names(monthly_pattern) <- c("month", "Number of Publications")
 barplot(monthly_pattern$'Number of Publications', names.arg = monthly_pattern$month, main = " Pattern of Publications per month", xlab = "Months", ylab = "Number of Publications")
+ggplot(monthly_pattern, aes(x=month, y=`Number of Publications`, group = 1)) + geom_line(color="#69b3a2", size=2, alpha=0.9, linetype=1) + geom_point(color="blue", size=3) + scale_x_discrete(limits = month.abb) + ggtitle("Pattern of Publications per month")
 barplot(yearly_pattern$'Number of Publications', names.arg = yearly_pattern$year, main = " Pattern of Publications per year", xlab = "Years", ylab = "Number of Publications")
 ```
 
