@@ -5,7 +5,7 @@ output: html_document
 ---
 
 ## ERD
-![ERD](ERD1.jpeg)
+![ERD](practicum2.jpeg)
 
 ## Assumptions : 
 1. Created Fact-tables based on the analysis that was required.
@@ -26,7 +26,7 @@ library(ggplot2)
 
 ## Setting up Connection to Database and Parsing XML
 ```{r}
-path<- "/Users/sanyamharne/Desktop/practicum2/"
+path<- "/Users/sanyamharne/Desktop/NEU_SEM1/DBMS_Martin/practicum2/"
 #path <- "/home/yashk/Documents/DBMS-Workspace/DBMS-Practicum2/"
 fn <- "pubmed_sample.xml"
 fpn = paste0(path, fn)
