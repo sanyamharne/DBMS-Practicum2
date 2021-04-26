@@ -545,7 +545,7 @@ SELECT * FROM Author LIMIT 5 ;
 
 ## 1st FactTable
 ## ERD
-![ERD](ArticleFacts.jpeg)
+![ERD](FactTable1.jpeg)
 
 ## Creating ArticleDimension1 table
 ```{sql connection=dbcon}
@@ -639,7 +639,7 @@ SELECT * FROM ArticleFacts LIMIT 5;
 
 ## Part 2: 2. PublicationFacts Star Schema
 ## ERD
-![ERD](PublicationFacts.jpeg)
+![ERD](FactTable2.jpeg)
 
 ## Creating ArticleDimension2 table
 ```{sql connection=dbcon}
