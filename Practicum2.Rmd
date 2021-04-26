@@ -5,7 +5,7 @@ output: html_document
 ---
 
 ## ERD
-![ERD](ERD1.jpeg)
+![ERD](ERD1.png)
 
 ## Assumptions : 
 1. Created Fact-tables based on the analysis that was required.
@@ -206,8 +206,7 @@ CREATE TABLE IF  NOT EXISTS ArticleHistory(
 
 ## Verifying Status of Tables in database
 ## Database Status
-## ERD
-![ERD](Status1.png)
+![Screenshot1](Status1.png)
 
 ## Extracting the Journal table from XML
 ```{r}
@@ -544,8 +543,7 @@ SELECT * FROM Author LIMIT 5 ;
 # Part 2: 1. ArticleFacts Star Schema
 
 ## 1st FactTable
-## ERD
-![ERD](ArticleFacts.jpeg)
+![ERD](ArticleFacts.png)
 
 ## Creating ArticleDimension1 table
 ```{sql connection=dbcon}
@@ -601,8 +599,7 @@ FOREIGN KEY(journal_id) REFERENCES JournalDimension1(journal_id)
 
 ## Verifying Status of Tables in database
 ## Database Status
-## ERD
-![ERD](Status2.png)
+![Screenshot2](Status2.png)
 
 ## Populating ArticleDimension1 Table
 ```{r}
@@ -638,8 +635,7 @@ SELECT * FROM ArticleFacts LIMIT 5;
 ```
 
 ## Part 2: 2. PublicationFacts Star Schema
-## ERD
-![ERD](PublicationFacts.jpeg)
+![ERD](PublicationFacts.png)
 
 ## Creating ArticleDimension2 table
 ```{sql connection=dbcon}
@@ -705,8 +701,7 @@ FOREIGN KEY(author_id) REFERENCES AuthorDimension2(author_id)
 
 ## Verifying Status of Tables in database
 ## Database Status
-## ERD
-![ERD](Status3.png)
+![Screenshot3](Status3.png)
 
 ## Populating ArticleDimension2 Table
 ```{r}
